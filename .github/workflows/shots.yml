@@ -1,0 +1,31 @@
+name: shots
+on: push
+jobs:
+  shots:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 3 }
+      - uses: dtolnay/rust-toolchain@stable
+      - run: ./build-xcframework.sh --macos-only
+      - name: shoot before/after
+        run: |
+          set -x
+          F=GiroCrabApp/Sources/GiroCrabUI/SidebarView.swift
+          M=GiroCrabApp/Sources/GiroCrabUI/AppModel.swift
+          # temporary: select the "Depots" kind header for the shot
+          perl -0pi -e 's/(\n(\s*)if let q = options\.selectAccount)/\n$2if let g = groups.first(where: { \$0.name.contains("Depot") }) ?? groups.first { sidebarSelection = .group(g.id) }$1/' $M
+          grep -n 'contains("Depot")' $M
+          mkdir -p out
+          for v in before after; do
+            if [ $v = before ]; then git show HEAD~2:$F > $F; else git show HEAD~1:$F > $F; fi
+            (cd GiroCrabApp && swift build -q)
+            for mode in "" "--dark"; do
+              n=$v${mode:+-dark}
+              GiroCrabApp/.build/debug/GiroCrabMac --demo-seed --screenshot $PWD/out/$n.png --window-width 1100 --window-height 700 $mode || true
+            done
+          done
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with: { name: shots, path: out }
