@@ -277,7 +277,9 @@ struct SidebarView: View {
                 isLoanGroup: !group.accounts.isEmpty && group.accounts.allSatisfy { $0.kind == .loan },
                 open: open, toggle: toggle
             )
-                .padding(.top, 10)
+                // split evenly: the selection pill spans the whole row, so a
+                // top-only gap pushed the selected header's text to its bottom
+                .padding(.vertical, 5)
                 .listRowInsets(Self.rowInsets)
                 .groupHeaderTap(SidebarItem.group(group.id), toggle: toggle)
                 #if os(iOS)
@@ -311,7 +313,7 @@ struct SidebarView: View {
                     nameRedaction: [],
                     open: open, toggle: toggle
                 )
-                .padding(.top, 10)
+                .padding(.vertical, 5) // text centred in the selection pill
                 .listRowInsets(Self.rowInsets)
                 .groupHeaderTap(SidebarItem.bank(group.id), toggle: toggle)
                 #if os(iOS)
@@ -335,7 +337,9 @@ struct SidebarView: View {
             let toggle = { withAnimation(Motion.animation(.easeInOut(duration: 0.15))) { model.toggleCollapsed(group) } }
             let indent = CGFloat(group.depth) * DisclosureChevron.indentStep
             UserGroupHeader(group: group, open: open, toggle: toggle)
-                .padding(.vertical, 3) // taller hit area for the drop zones
+                // taller hit area for the drop zones; the gap above the group split
+                // evenly so the text stays centred in the selection pill
+                .padding(.vertical, group.depth == 0 ? 8 : 5)
                 // an account goes to the top of this group; a group above it
                 // (upper half) or into it as a subgroup (lower half)
                 .modifier(DropSlot(key: "g:" + group.uuid, inset: 0, line: $dropLine, edge: { half in
@@ -345,7 +349,6 @@ struct SidebarView: View {
                 }, perform: { items, edge in
                     handleDrop(items, into: group, row: nil, edge: edge)
                 }, freeLeading: 12))  // the expand/collapse arrow
-                .padding(.top, group.depth == 0 ? 10 : 4)
                 .padding(.leading, indent)
                 .listRowInsets(Self.rowInsets)
                 .groupHeaderTap(SidebarItem.userGroup(group.uuid), toggle: toggle)
